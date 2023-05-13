@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:weatherapp_proj/api/Get.dart';
 
 import 'package:weatherapp_proj/pages/Currently.dart';
 import 'package:weatherapp_proj/pages/Today.dart';
@@ -94,29 +96,41 @@ class _HomeState extends State<Home> {
         ),
         appBar: AppBar(
           backgroundColor: Colors.blueGrey[900],
-          title:  TextField(
-            decoration: InputDecoration(
-              hintStyle: const TextStyle(color: Colors.black),
-              prefixIcon: const Icon(Icons.search, color: Colors.black),
-              hintText: "Search",
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blueGrey),
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
-              ),
-              disabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blueGrey),
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
-              ),
-              filled: true,
-              fillColor: Colors.blueGrey[300],
+          title:  TypeAheadField(
+            textFieldConfiguration: TextFieldConfiguration(
+              controller: searchController,
+              decoration: textFieldDecoration,
             ),
-            //controller: searchController,
-            onSubmitted: (value) => setState(() {
-              textColor = Colors.black;
-              text = value;
-              //searchController.clear();
-            }),
+            suggestionsCallback: (pattern) async{
+              return await getCitiesSuggestion(pattern);
+              //return CitiesService.getSuggestions(pattern);
+
+              print("a");
+            },
+            itemBuilder: (context, suggestion) {
+              return ListTile(
+                leading: const Icon(Icons.location_city),
+                title: Text("${suggestion['name']}, ${suggestion['admin1']}, ${suggestion['country']}"),
+              );
+            },
+            onSuggestionSelected: (suggestion) {
+              setState(() {
+                textColor = Colors.black;
+                text = suggestion['name'];
+                searchController.clear();
+              });
+            
+            },
           ),
+          // TextField(
+          //   decoration: textFieldDecoration,
+          //   controller: searchController,
+          //   onSubmitted: (value) => setState(() {
+          //     textColor = Colors.black;
+          //     text = value;
+          //     searchController.clear();
+          //   }),
+          // ),
           actions: [
             const VerticalDivider(
               width: 1,
@@ -178,3 +192,18 @@ class BottomBar extends StatelessWidget {
   }
 }
 
+InputDecoration textFieldDecoration = InputDecoration(
+              hintStyle: const TextStyle(color: Colors.black),
+              prefixIcon: const Icon(Icons.search, color: Colors.black),
+              hintText: "Search",
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blueGrey),
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              ),
+              disabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blueGrey),
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              ),
+              filled: true,
+              fillColor: Colors.blueGrey[300],
+            );
