@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:flutter_async_autocomplete/flutter_async_autocomplete.dart';
+//import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:weatherapp_proj/api/Get.dart';
 
@@ -34,6 +35,7 @@ class Home extends StatefulWidget {
   @override
   State<Home> createState() => _HomeState();
 }
+
 Future<Position> _determinePosition() async {
   bool serviceEnabled;
   LocationPermission permission;
@@ -42,7 +44,7 @@ Future<Position> _determinePosition() async {
   serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
     // Location services are not enabled don't continue
-    // accessing the position and request users of the 
+    // accessing the position and request users of the
     // App to enable the location services.
     //return Future.error('Location services are disabled.');
     throw Exception('Location services are disabled.');
@@ -54,21 +56,21 @@ Future<Position> _determinePosition() async {
     if (permission == LocationPermission.denied) {
       // Permissions are denied, next time you could try
       // requesting permissions again (this is also where
-      // Android's shouldShowRequestPermissionRationale 
+      // Android's shouldShowRequestPermissionRationale
       // returned true. According to Android guidelines
       // your App should show an explanatory UI now.
       //return Future.error('Location permissions are denied');
       throw Exception('Location permissions are denied');
     }
   }
-  
+
   if (permission == LocationPermission.deniedForever) {
-    // Permissions are denied forever, handle appropriately. 
-   // return Future.error(
+    // Permissions are denied forever, handle appropriately.
+    // return Future.error(
     //  'Location permissions are permanently denied, we cannot request permissions.');
     throw Exception(
-      'Location permissions are permanently denied, we cannot request permissions.');
-  } 
+        'Location permissions are permanently denied, we cannot request permissions.');
+  }
 
   // When we reach here, permissions are granted and we can
   // continue accessing the position of the device.
@@ -76,10 +78,25 @@ Future<Position> _determinePosition() async {
 }
 
 class _HomeState extends State<Home> {
+  //at the start of the application get the location of the user
+  @override
+  void initState() {
+    super.initState();
+    _determinePosition().then(
+      (value) {
+        setState(() {
+          text = value.toString();
+          latitude = value.latitude.toString();
+          longitude = value.longitude.toString();
+        });
+      },
+    );
+  }
 
-  
   String text = "hello";
   Color textColor = Colors.black;
+  String latitude = "";
+  String longitude = "";
   final searchController = TextEditingController();
   @override
   Widget build(BuildContext context) {
@@ -89,40 +106,39 @@ class _HomeState extends State<Home> {
         bottomNavigationBar: const BottomBar(),
         body: TabBarView(
           children: [
-            Currently(text: text,textColor: textColor),
-            Today(text: text,textColor: textColor),
-            Weekly(text: text,textColor: textColor),
+            Currently(text: text, textColor: textColor, latitude: latitude, longitude: longitude),
+            Today(text: text, textColor: textColor,lat : latitude,long : longitude),
+            Weekly(text: text, textColor: textColor
+            ,lat : latitude,long : longitude),
           ],
         ),
         appBar: AppBar(
           backgroundColor: Colors.blueGrey[900],
-          title:  TypeAheadField(
-            textFieldConfiguration: TextFieldConfiguration(
-              controller: searchController,
-              decoration: textFieldDecoration,
-            ),
-            suggestionsCallback: (pattern) async{
-              return await getCitiesSuggestion(pattern);
-              //return CitiesService.getSuggestions(pattern);
-
-              print("a");
+          title: AsyncAutocomplete(
+            asyncSuggestions: (searchValue) {
+              return getCitiesSuggestion(searchValue);
             },
-            itemBuilder: (context, suggestion) {
-              return ListTile(
-                leading: const Icon(Icons.location_city),
-                title: Text("${suggestion['name']}, ${suggestion['admin1']}, ${suggestion['country']}"),
-              );
-            },
-            onSuggestionSelected: (suggestion) {
-              setState(() {
+            maxListHeight: 375,
+            controller: searchController,
+            decoration: textFieldDecoration,
+            onSubmitted: null,
+            onChanged: null,
+            suggestionBuilder: (data) => ListTile(
+              title: Text(data["name"]),
+              subtitle: Text("${data['admin1']}, ${data['country']}"),
+              onTap: () => setState(() {
+                text = "${data['name']} \n${data['admin1']}, ${data['country']}";
+                latitude = data["latitude"].toString();
+                longitude = data["longitude"].toString();
                 textColor = Colors.black;
-                text = suggestion['name'];
+                FocusScope.of(context).unfocus();
                 searchController.clear();
-              });
+              }),
+              
+            ),
             
-            },
           ),
-          // TextField(
+          //     TextField(
           //   decoration: textFieldDecoration,
           //   controller: searchController,
           //   onSubmitted: (value) => setState(() {
@@ -138,19 +154,23 @@ class _HomeState extends State<Home> {
             ),
             IconButton(
               icon: const Icon(Icons.location_on),
-              onPressed: ()async {
+              onPressed: () async {
                 setState(() {
                   //text = "Geolocation";
                   textColor = Colors.black;
-                  
                 });
-                _determinePosition().then((value) => setState(() {
-                  value.latitude;
-                  text = value.toString();
-                })).catchError((e) => setState(() {
-                  text = "Location service is not available Please enable it in settings";
-                  textColor = Colors.red;
-                }));
+                _determinePosition()
+                    .then((value) => setState(() {
+                          //alue.latitude;
+                          latitude = value.latitude.toString();
+                          longitude = value.longitude.toString();
+                          text = value.toString();
+                        }))
+                    .catchError((e) => setState(() {
+                          text =
+                              "Location service is not available Please enable it in settings";
+                          textColor = Colors.red;
+                        }));
                 //await _getLocation();
               },
             ),
@@ -162,10 +182,8 @@ class _HomeState extends State<Home> {
 }
 
 class BottomBar extends StatelessWidget {
- 
   const BottomBar({
     super.key,
-    
   });
 
   @override
@@ -193,17 +211,17 @@ class BottomBar extends StatelessWidget {
 }
 
 InputDecoration textFieldDecoration = InputDecoration(
-              hintStyle: const TextStyle(color: Colors.black),
-              prefixIcon: const Icon(Icons.search, color: Colors.black),
-              hintText: "Search",
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blueGrey),
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
-              ),
-              disabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blueGrey),
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
-              ),
-              filled: true,
-              fillColor: Colors.blueGrey[300],
-            );
+  hintStyle: const TextStyle(color: Colors.black),
+  prefixIcon: const Icon(Icons.search, color: Colors.black),
+  hintText: "Search",
+  enabledBorder: const OutlineInputBorder(
+    borderSide: BorderSide(color: Colors.blueGrey),
+    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+  ),
+  disabledBorder: const OutlineInputBorder(
+    borderSide: BorderSide(color: Colors.blueGrey),
+    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+  ),
+  filled: true,
+  fillColor: Colors.blueGrey[300],
+);
