@@ -88,9 +88,11 @@ class _HomeState extends State<Home> {
           text = value.toString();
           latitude = value.latitude.toString();
           longitude = value.longitude.toString();
+
         });
       },
     );
+    
   }
 
   String text = "hello";
@@ -104,13 +106,28 @@ class _HomeState extends State<Home> {
       length: 3,
       child: Scaffold(
         bottomNavigationBar: const BottomBar(),
-        body: TabBarView(
-          children: [
-            Currently(text: text, textColor: textColor, latitude: latitude, longitude: longitude),
-            Today(text: text, textColor: textColor,lat : latitude,long : longitude),
-            Weekly(text: text, textColor: textColor
-            ,lat : latitude,long : longitude),
-          ],
+        body: Container(
+          decoration: BoxDecoration(image: DecorationImage(image:const AssetImage("assets/back4.jpg"),fit: BoxFit.cover,colorFilter: ColorFilter.mode(Colors.black.withOpacity(1),BlendMode.dstATop))
+          ),
+          child: TabBarView(
+            children: [
+              Currently(
+                  text: text,
+                  textColor: textColor,
+                  latitude: latitude,
+                  longitude: longitude),
+              Today(
+                  text: text,
+                  textColor: textColor,
+                  lat: latitude,
+                  long: longitude),
+              Weekly(
+                  text: text,
+                  textColor: textColor,
+                  lat: latitude,
+                  long: longitude),
+            ],
+          ),
         ),
         appBar: AppBar(
           backgroundColor: Colors.blueGrey[900],
@@ -127,16 +144,15 @@ class _HomeState extends State<Home> {
               title: Text(data["name"]),
               subtitle: Text("${data['admin1']}, ${data['country']}"),
               onTap: () => setState(() {
-                text = "${data['name']} \n${data['admin1']}, ${data['country']}";
+                text =
+                    "${data['name']} \n${data['admin1']}, ${data['country']}";
                 latitude = data["latitude"].toString();
                 longitude = data["longitude"].toString();
                 textColor = Colors.black;
                 FocusScope.of(context).unfocus();
                 searchController.clear();
               }),
-              
             ),
-            
           ),
           //     TextField(
           //   decoration: textFieldDecoration,
@@ -213,7 +229,7 @@ class BottomBar extends StatelessWidget {
 InputDecoration textFieldDecoration = InputDecoration(
   hintStyle: const TextStyle(color: Colors.black),
   prefixIcon: const Icon(Icons.search, color: Colors.black),
-  hintText: "Search",
+  hintText: "Search for a location",
   enabledBorder: const OutlineInputBorder(
     borderSide: BorderSide(color: Colors.blueGrey),
     borderRadius: BorderRadius.all(Radius.circular(10.0)),
